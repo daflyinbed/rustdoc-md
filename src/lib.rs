@@ -19,8 +19,8 @@ pub fn rustdoc_json_to_markdown(data: Crate) -> String {
 
     // Process the root module to start
     let root_id = data.root;
-    if let Some(root_item) = data.index.get(&root_id) {
-        if let ItemEnum::Module(module) = &root_item.inner {
+    if let Some(root_item) = data.index.get(&root_id)
+        && let ItemEnum::Module(module) = &root_item.inner {
             if let Some(name) = &root_item.name {
                 output.push_str(&format!("# Module `{}`\n\n", name));
             } else if module.is_crate {
@@ -36,7 +36,6 @@ pub fn rustdoc_json_to_markdown(data: Crate) -> String {
             // starting at level 2 for top-level categories
             process_items(&mut output, &module.items, &data, 2);
         }
-    }
 
     output
 }
@@ -315,8 +314,8 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                         output.push('(');
                         for (i, field_opt) in fields.iter().enumerate() {
                             if let Some(field_id) = field_opt {
-                                if let Some(field_item) = data.index.get(field_id) {
-                                    if let ItemEnum::StructField(field_type) = &field_item.inner {
+                                if let Some(field_item) = data.index.get(field_id)
+                                    && let ItemEnum::StructField(field_type) = &field_item.inner {
                                         // Field visibility if needed
                                         match &field_item.visibility {
                                             Visibility::Public => output.push_str("pub "),
@@ -328,7 +327,6 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                                         }
                                         output.push_str(&format_type(field_type, data));
                                     }
-                                }
                                 if i < fields.len() - 1 {
                                     output.push_str(", ");
                                 }
@@ -348,9 +346,9 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                     } => {
                         output.push_str(" {\n");
                         for &field_id in fields {
-                            if let Some(field_item) = data.index.get(&field_id) {
-                                if let Some(field_name) = &field_item.name {
-                                    if let ItemEnum::StructField(field_type) = &field_item.inner {
+                            if let Some(field_item) = data.index.get(&field_id)
+                                && let Some(field_name) = &field_item.name
+                                    && let ItemEnum::StructField(field_type) = &field_item.inner {
                                         // Field visibility
                                         match &field_item.visibility {
                                             Visibility::Public => output.push_str("    pub "),
@@ -366,8 +364,6 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                                             format_type(field_type, data)
                                         ));
                                     }
-                                }
-                            }
                         }
                         if *has_stripped_fields {
                             output.push_str("    // Some fields omitted\n");
@@ -384,8 +380,8 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                 output.push_str(" {\n");
 
                 for &variant_id in &enum_.variants {
-                    if let Some(variant_item) = data.index.get(&variant_id) {
-                        if let Some(variant_name) = &variant_item.name {
+                    if let Some(variant_item) = data.index.get(&variant_id)
+                        && let Some(variant_name) = &variant_item.name {
                             output.push_str(&format!("    {}", variant_name));
 
                             if let ItemEnum::Variant(variant) = &variant_item.inner {
@@ -395,15 +391,14 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                                         output.push('(');
                                         for (i, field_opt) in fields.iter().enumerate() {
                                             if let Some(field_id) = field_opt {
-                                                if let Some(field_item) = data.index.get(field_id) {
-                                                    if let ItemEnum::StructField(field_type) =
+                                                if let Some(field_item) = data.index.get(field_id)
+                                                    && let ItemEnum::StructField(field_type) =
                                                         &field_item.inner
                                                     {
                                                         output.push_str(&format_type(
                                                             field_type, data,
                                                         ));
                                                     }
-                                                }
                                                 if i < fields.len() - 1 {
                                                     output.push_str(", ");
                                                 }
@@ -423,9 +418,9 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                                     } => {
                                         output.push_str(" {\n");
                                         for &field_id in fields {
-                                            if let Some(field_item) = data.index.get(&field_id) {
-                                                if let Some(field_name) = &field_item.name {
-                                                    if let ItemEnum::StructField(field_type) =
+                                            if let Some(field_item) = data.index.get(&field_id)
+                                                && let Some(field_name) = &field_item.name
+                                                    && let ItemEnum::StructField(field_type) =
                                                         &field_item.inner
                                                     {
                                                         output.push_str(&format!(
@@ -434,8 +429,6 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                                                             format_type(field_type, data)
                                                         ));
                                                     }
-                                                }
-                                            }
                                         }
                                         if *has_stripped_fields {
                                             output.push_str("        // Some fields omitted\n");
@@ -451,7 +444,6 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
 
                             output.push_str(",\n");
                         }
-                    }
                 }
 
                 if enum_.has_stripped_variants {
@@ -468,9 +460,9 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                 output.push_str(" {\n");
 
                 for &field_id in &union_.fields {
-                    if let Some(field_item) = data.index.get(&field_id) {
-                        if let Some(field_name) = &field_item.name {
-                            if let ItemEnum::StructField(field_type) = &field_item.inner {
+                    if let Some(field_item) = data.index.get(&field_id)
+                        && let Some(field_name) = &field_item.name
+                            && let ItemEnum::StructField(field_type) = &field_item.inner {
                                 match &field_item.visibility {
                                     Visibility::Public => output.push_str("    pub "),
                                     Visibility::Crate => output.push_str("    pub(crate) "),
@@ -485,8 +477,6 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                                     format_type(field_type, data)
                                 ));
                             }
-                        }
-                    }
                 }
 
                 if union_.has_stripped_fields {
@@ -811,11 +801,10 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                         output.push('(');
                         for (i, field_opt) in fields.iter().enumerate() {
                             if let Some(field_id) = field_opt {
-                                if let Some(field_item) = data.index.get(field_id) {
-                                    if let ItemEnum::StructField(field_type) = &field_item.inner {
+                                if let Some(field_item) = data.index.get(field_id)
+                                    && let ItemEnum::StructField(field_type) = &field_item.inner {
                                         output.push_str(&format_type(field_type, data));
                                     }
-                                }
                                 if i < fields.len() - 1 {
                                     output.push_str(", ");
                                 }
@@ -835,17 +824,15 @@ fn format_item_signature(output: &mut String, item: &Item, data: &Crate) {
                     } => {
                         output.push_str(" {\n");
                         for &field_id in fields {
-                            if let Some(field_item) = data.index.get(&field_id) {
-                                if let Some(field_name) = &field_item.name {
-                                    if let ItemEnum::StructField(field_type) = &field_item.inner {
+                            if let Some(field_item) = data.index.get(&field_id)
+                                && let Some(field_name) = &field_item.name
+                                    && let ItemEnum::StructField(field_type) = &field_item.inner {
                                         output.push_str(&format!(
                                             "    {}: {},\n",
                                             field_name,
                                             format_type(field_type, data)
                                         ));
                                     }
-                                }
-                            }
                         }
                         if *has_stripped_fields {
                             output.push_str("    // Some fields omitted\n");
@@ -1119,7 +1106,7 @@ fn format_generic_args(output: &mut String, args: &GenericArgs, data: &Crate) {
                 // Format constraint args if present
                 if let Some(args) = &constraint.args {
                     let mut args_str = String::new();
-                    format_generic_args(&mut args_str, &args, data);
+                    format_generic_args(&mut args_str, args, data);
                     if !args_str.is_empty() && args_str != "<>" {
                         output.push_str(&args_str);
                     }
@@ -1464,8 +1451,8 @@ fn process_struct_details(output: &mut String, struct_: &Struct, data: &Crate, l
 
             for (i, field_opt) in fields.iter().enumerate() {
                 if let Some(field_id) = field_opt {
-                    if let Some(field_item) = data.index.get(field_id) {
-                        if let ItemEnum::StructField(field_type) = &field_item.inner {
+                    if let Some(field_item) = data.index.get(field_id)
+                        && let ItemEnum::StructField(field_type) = &field_item.inner {
                             let docs = field_item
                                 .docs
                                 .as_deref()
@@ -1478,7 +1465,6 @@ fn process_struct_details(output: &mut String, struct_: &Struct, data: &Crate, l
                                 docs
                             ));
                         }
-                    }
                 } else {
                     output.push_str(&format!("| {} | `private` | *Private field* |\n", i));
                 }
@@ -1495,9 +1481,9 @@ fn process_struct_details(output: &mut String, struct_: &Struct, data: &Crate, l
             output.push_str("|------|------|---------------|\n");
 
             for &field_id in fields {
-                if let Some(field_item) = data.index.get(&field_id) {
-                    if let Some(field_name) = &field_item.name {
-                        if let ItemEnum::StructField(field_type) = &field_item.inner {
+                if let Some(field_item) = data.index.get(&field_id)
+                    && let Some(field_name) = &field_item.name
+                        && let ItemEnum::StructField(field_type) = &field_item.inner {
                             let docs = field_item
                                 .docs
                                 .as_deref()
@@ -1510,8 +1496,6 @@ fn process_struct_details(output: &mut String, struct_: &Struct, data: &Crate, l
                                 docs
                             ));
                         }
-                    }
-                }
             }
 
             if *has_stripped_fields {
@@ -1536,8 +1520,8 @@ fn process_struct_details(output: &mut String, struct_: &Struct, data: &Crate, l
         let mut inherent_impls: Vec<Id> = Vec::new();
 
         for &impl_id in &struct_.impls {
-            if let Some(impl_item) = data.index.get(&impl_id) {
-                if let ItemEnum::Impl(impl_) = &impl_item.inner {
+            if let Some(impl_item) = data.index.get(&impl_id)
+                && let ItemEnum::Impl(impl_) = &impl_item.inner {
                     if let Some(trait_) = &impl_.trait_ {
                         let trait_name = trait_.path.clone();
                         trait_impls.entry(trait_name).or_default().push(impl_id);
@@ -1546,7 +1530,6 @@ fn process_struct_details(output: &mut String, struct_: &Struct, data: &Crate, l
                         inherent_impls.push(impl_id);
                     }
                 }
-            }
         }
 
         // First list inherent impls
@@ -1557,34 +1540,30 @@ fn process_struct_details(output: &mut String, struct_: &Struct, data: &Crate, l
                 "#".repeat(std::cmp::min(heading_level + 1, 6))
             ));
             for &impl_id in &inherent_impls {
-                if let Some(impl_item) = data.index.get(&impl_id) {
-                    if let ItemEnum::Impl(impl_) = &impl_item.inner {
+                if let Some(impl_item) = data.index.get(&impl_id)
+                    && let ItemEnum::Impl(impl_) = &impl_item.inner {
                         for &item_id in &impl_.items {
-                            if let Some(method_item) = data.index.get(&item_id) {
-                                if let ItemEnum::Function(_) = &method_item.inner {
+                            if let Some(method_item) = data.index.get(&item_id)
+                                && let ItemEnum::Function(_) = &method_item.inner {
                                     // Format method signature
                                     let mut method_signature = String::new();
                                     format_item_signature(&mut method_signature, method_item, data);
 
                                     // Output with proper code block formatting
                                     output.push_str("- ```rust\n  ");
-                                    output.push_str(&method_signature.trim());
+                                    output.push_str(method_signature.trim());
                                     output.push_str("\n  ```");
 
                                     // Add documentation if available
-                                    if let Some(docs) = &method_item.docs {
-                                        if let Some(first_line) = docs.lines().next() {
-                                            if !first_line.trim().is_empty() {
+                                    if let Some(docs) = &method_item.docs
+                                        && let Some(first_line) = docs.lines().next()
+                                            && !first_line.trim().is_empty() {
                                                 output.push_str(&format!("\n  {}", first_line));
                                             }
-                                        }
-                                    }
                                     output.push_str("\n\n");
                                 }
-                            }
                         }
                     }
-                }
             }
         }
 
@@ -1601,11 +1580,11 @@ fn process_struct_details(output: &mut String, struct_: &Struct, data: &Crate, l
             for (trait_name, impls) in sorted_trait_impls {
                 output.push_str(&format!("- **{}**\n", trait_name));
                 for &impl_id in &impls {
-                    if let Some(impl_item) = data.index.get(&impl_id) {
-                        if let ItemEnum::Impl(impl_) = &impl_item.inner {
+                    if let Some(impl_item) = data.index.get(&impl_id)
+                        && let ItemEnum::Impl(impl_) = &impl_item.inner {
                             for &item_id in &impl_.items {
-                                if let Some(method_item) = data.index.get(&item_id) {
-                                    if let ItemEnum::Function(_) = &method_item.inner {
+                                if let Some(method_item) = data.index.get(&item_id)
+                                    && let ItemEnum::Function(_) = &method_item.inner {
                                         // Format method signature
                                         let mut method_signature = String::new();
                                         format_item_signature(
@@ -1616,24 +1595,20 @@ fn process_struct_details(output: &mut String, struct_: &Struct, data: &Crate, l
 
                                         // Output with proper code block formatting
                                         output.push_str("  - ```rust\n    ");
-                                        output.push_str(&method_signature.trim());
+                                        output.push_str(method_signature.trim());
                                         output.push_str("\n    ```");
 
                                         // Add documentation if available
-                                        if let Some(docs) = &method_item.docs {
-                                            if let Some(first_line) = docs.lines().next() {
-                                                if !first_line.trim().is_empty() {
+                                        if let Some(docs) = &method_item.docs
+                                            && let Some(first_line) = docs.lines().next()
+                                                && !first_line.trim().is_empty() {
                                                     output
                                                         .push_str(&format!("\n    {}", first_line));
                                                 }
-                                            }
-                                        }
                                         output.push_str("\n\n");
                                     }
-                                }
                             }
                         }
-                    }
                 }
             }
         }
@@ -1647,8 +1622,8 @@ fn process_enum_details(output: &mut String, enum_: &Enum, data: &Crate, level: 
     output.push_str(&format!("{} Variants\n\n", "#".repeat(heading_level)));
 
     for &variant_id in &enum_.variants {
-        if let Some(variant_item) = data.index.get(&variant_id) {
-            if let Some(variant_name) = &variant_item.name {
+        if let Some(variant_item) = data.index.get(&variant_id)
+            && let Some(variant_name) = &variant_item.name {
                 // Use heading_level + 1 for individual variants (capped at 6)
                 let variant_heading_level = std::cmp::min(heading_level + 1, 6);
                 output.push_str(&format!(
@@ -1680,8 +1655,8 @@ fn process_enum_details(output: &mut String, enum_: &Enum, data: &Crate, level: 
 
                             for (i, field_opt) in fields.iter().enumerate() {
                                 if let Some(field_id) = field_opt {
-                                    if let Some(field_item) = data.index.get(field_id) {
-                                        if let ItemEnum::StructField(field_type) = &field_item.inner
+                                    if let Some(field_item) = data.index.get(field_id)
+                                        && let ItemEnum::StructField(field_type) = &field_item.inner
                                         {
                                             let docs = field_item
                                                 .docs
@@ -1695,7 +1670,6 @@ fn process_enum_details(output: &mut String, enum_: &Enum, data: &Crate, level: 
                                                 docs
                                             ));
                                         }
-                                    }
                                 } else {
                                     output.push_str(&format!(
                                         "| {} | `private` | *Private field* |\n",
@@ -1714,9 +1688,9 @@ fn process_enum_details(output: &mut String, enum_: &Enum, data: &Crate, level: 
                             output.push_str("|------|------|---------------|\n");
 
                             for &field_id in fields {
-                                if let Some(field_item) = data.index.get(&field_id) {
-                                    if let Some(field_name) = &field_item.name {
-                                        if let ItemEnum::StructField(field_type) = &field_item.inner
+                                if let Some(field_item) = data.index.get(&field_id)
+                                    && let Some(field_name) = &field_item.name
+                                        && let ItemEnum::StructField(field_type) = &field_item.inner
                                         {
                                             let docs = field_item
                                                 .docs
@@ -1730,8 +1704,6 @@ fn process_enum_details(output: &mut String, enum_: &Enum, data: &Crate, level: 
                                                 docs
                                             ));
                                         }
-                                    }
-                                }
                             }
 
                             if *has_stripped_fields {
@@ -1748,7 +1720,6 @@ fn process_enum_details(output: &mut String, enum_: &Enum, data: &Crate, level: 
                     }
                 }
             }
-        }
     }
 
     if enum_.has_stripped_variants {
@@ -1770,8 +1741,8 @@ fn process_enum_details(output: &mut String, enum_: &Enum, data: &Crate, level: 
         let mut inherent_impls: Vec<Id> = Vec::new();
 
         for &impl_id in &enum_.impls {
-            if let Some(impl_item) = data.index.get(&impl_id) {
-                if let ItemEnum::Impl(impl_) = &impl_item.inner {
+            if let Some(impl_item) = data.index.get(&impl_id)
+                && let ItemEnum::Impl(impl_) = &impl_item.inner {
                     if let Some(trait_) = &impl_.trait_ {
                         let trait_name = trait_.path.clone();
                         trait_impls.entry(trait_name).or_default().push(impl_id);
@@ -1780,7 +1751,6 @@ fn process_enum_details(output: &mut String, enum_: &Enum, data: &Crate, level: 
                         inherent_impls.push(impl_id);
                     }
                 }
-            }
         }
 
         // First list inherent impls
@@ -1788,34 +1758,30 @@ fn process_enum_details(output: &mut String, enum_: &Enum, data: &Crate, level: 
             let methods_level = std::cmp::min(heading_level + 1, 6);
             output.push_str(&format!("{} Methods\n\n", "#".repeat(methods_level)));
             for &impl_id in &inherent_impls {
-                if let Some(impl_item) = data.index.get(&impl_id) {
-                    if let ItemEnum::Impl(impl_) = &impl_item.inner {
+                if let Some(impl_item) = data.index.get(&impl_id)
+                    && let ItemEnum::Impl(impl_) = &impl_item.inner {
                         for &item_id in &impl_.items {
-                            if let Some(method_item) = data.index.get(&item_id) {
-                                if let ItemEnum::Function(_) = &method_item.inner {
+                            if let Some(method_item) = data.index.get(&item_id)
+                                && let ItemEnum::Function(_) = &method_item.inner {
                                     // Format method signature
                                     let mut method_signature = String::new();
                                     format_item_signature(&mut method_signature, method_item, data);
 
                                     // Output with proper code block formatting
                                     output.push_str("- ```rust\n  ");
-                                    output.push_str(&method_signature.trim());
+                                    output.push_str(method_signature.trim());
                                     output.push_str("\n  ```");
 
                                     // Add documentation if available
-                                    if let Some(docs) = &method_item.docs {
-                                        if let Some(first_line) = docs.lines().next() {
-                                            if !first_line.trim().is_empty() {
+                                    if let Some(docs) = &method_item.docs
+                                        && let Some(first_line) = docs.lines().next()
+                                            && !first_line.trim().is_empty() {
                                                 output.push_str(&format!("\n  {}", first_line));
                                             }
-                                        }
-                                    }
                                     output.push_str("\n\n");
                                 }
-                            }
                         }
                     }
-                }
             }
         }
 
@@ -1832,11 +1798,11 @@ fn process_enum_details(output: &mut String, enum_: &Enum, data: &Crate, level: 
             for (trait_name, impls) in sorted_trait_impls {
                 output.push_str(&format!("- **{}**\n", trait_name));
                 for &impl_id in &impls {
-                    if let Some(impl_item) = data.index.get(&impl_id) {
-                        if let ItemEnum::Impl(impl_) = &impl_item.inner {
+                    if let Some(impl_item) = data.index.get(&impl_id)
+                        && let ItemEnum::Impl(impl_) = &impl_item.inner {
                             for &item_id in &impl_.items {
-                                if let Some(method_item) = data.index.get(&item_id) {
-                                    if let ItemEnum::Function(_) = &method_item.inner {
+                                if let Some(method_item) = data.index.get(&item_id)
+                                    && let ItemEnum::Function(_) = &method_item.inner {
                                         // Format method signature
                                         let mut method_signature = String::new();
                                         format_item_signature(
@@ -1847,24 +1813,20 @@ fn process_enum_details(output: &mut String, enum_: &Enum, data: &Crate, level: 
 
                                         // Output with proper code block formatting
                                         output.push_str("  - ```rust\n    ");
-                                        output.push_str(&method_signature.trim());
+                                        output.push_str(method_signature.trim());
                                         output.push_str("\n    ```");
 
                                         // Add documentation if available
-                                        if let Some(docs) = &method_item.docs {
-                                            if let Some(first_line) = docs.lines().next() {
-                                                if !first_line.trim().is_empty() {
+                                        if let Some(docs) = &method_item.docs
+                                            && let Some(first_line) = docs.lines().next()
+                                                && !first_line.trim().is_empty() {
                                                     output
                                                         .push_str(&format!("\n    {}", first_line));
                                                 }
-                                            }
-                                        }
                                         output.push_str("\n\n");
                                     }
-                                }
                             }
                         }
-                    }
                 }
             }
         }
@@ -1880,9 +1842,9 @@ fn process_union_details(output: &mut String, union_: &Union, data: &Crate, leve
     output.push_str("|------|------|---------------|\n");
 
     for &field_id in &union_.fields {
-        if let Some(field_item) = data.index.get(&field_id) {
-            if let Some(field_name) = &field_item.name {
-                if let ItemEnum::StructField(field_type) = &field_item.inner {
+        if let Some(field_item) = data.index.get(&field_id)
+            && let Some(field_name) = &field_item.name
+                && let ItemEnum::StructField(field_type) = &field_item.inner {
                     let docs = field_item
                         .docs
                         .as_deref()
@@ -1895,8 +1857,6 @@ fn process_union_details(output: &mut String, union_: &Union, data: &Crate, leve
                         docs
                     ));
                 }
-            }
-        }
     }
 
     if union_.has_stripped_fields {
@@ -1918,8 +1878,8 @@ fn process_union_details(output: &mut String, union_: &Union, data: &Crate, leve
         let mut inherent_impls: Vec<Id> = Vec::new();
 
         for &impl_id in &union_.impls {
-            if let Some(impl_item) = data.index.get(&impl_id) {
-                if let ItemEnum::Impl(impl_) = &impl_item.inner {
+            if let Some(impl_item) = data.index.get(&impl_id)
+                && let ItemEnum::Impl(impl_) = &impl_item.inner {
                     if let Some(trait_) = &impl_.trait_ {
                         let trait_name = trait_.path.clone();
                         trait_impls.entry(trait_name).or_default().push(impl_id);
@@ -1928,7 +1888,6 @@ fn process_union_details(output: &mut String, union_: &Union, data: &Crate, leve
                         inherent_impls.push(impl_id);
                     }
                 }
-            }
         }
 
         // First list inherent impls
@@ -1936,12 +1895,12 @@ fn process_union_details(output: &mut String, union_: &Union, data: &Crate, leve
             let methods_level = std::cmp::min(heading_level + 1, 6);
             output.push_str(&format!("{} Methods\n\n", "#".repeat(methods_level)));
             for &impl_id in &inherent_impls {
-                if let Some(impl_item) = data.index.get(&impl_id) {
-                    if let ItemEnum::Impl(impl_) = &impl_item.inner {
+                if let Some(impl_item) = data.index.get(&impl_id)
+                    && let ItemEnum::Impl(impl_) = &impl_item.inner {
                         for &item_id in &impl_.items {
-                            if let Some(method_item) = data.index.get(&item_id) {
-                                if let ItemEnum::Function(_) = &method_item.inner {
-                                    if let Some(name) = &method_item.name {
+                            if let Some(method_item) = data.index.get(&item_id)
+                                && let ItemEnum::Function(_) = &method_item.inner
+                                    && let Some(name) = &method_item.name {
                                         output.push_str(&format!("- `{}`: ", name));
                                         if let Some(docs) = &method_item.docs {
                                             let first_line = docs.lines().next().unwrap_or("");
@@ -1949,11 +1908,8 @@ fn process_union_details(output: &mut String, union_: &Union, data: &Crate, leve
                                         }
                                         output.push('\n');
                                     }
-                                }
-                            }
                         }
                     }
-                }
             }
             output.push('\n');
         }
@@ -1971,11 +1927,11 @@ fn process_union_details(output: &mut String, union_: &Union, data: &Crate, leve
             for (trait_name, impls) in sorted_trait_impls {
                 output.push_str(&format!("- **{}**\n", trait_name));
                 for &impl_id in &impls {
-                    if let Some(impl_item) = data.index.get(&impl_id) {
-                        if let ItemEnum::Impl(impl_) = &impl_item.inner {
+                    if let Some(impl_item) = data.index.get(&impl_id)
+                        && let ItemEnum::Impl(impl_) = &impl_item.inner {
                             for &item_id in &impl_.items {
-                                if let Some(method_item) = data.index.get(&item_id) {
-                                    if let Some(name) = &method_item.name {
+                                if let Some(method_item) = data.index.get(&item_id)
+                                    && let Some(name) = &method_item.name {
                                         output.push_str(&format!("  - `{}`: ", name));
                                         if let Some(docs) = &method_item.docs {
                                             let first_line = docs.lines().next().unwrap_or("");
@@ -1983,10 +1939,8 @@ fn process_union_details(output: &mut String, union_: &Union, data: &Crate, leve
                                         }
                                         output.push('\n');
                                     }
-                                }
                             }
                         }
-                    }
                 }
             }
             output.push('\n');
@@ -2052,19 +2006,16 @@ fn process_trait_details(output: &mut String, trait_: &Trait, data: &Crate, leve
                     "#".repeat(heading_level + 1)
                 ));
                 for &type_id in &assoc_types {
-                    if let Some(type_item) = data.index.get(&type_id) {
-                        if let Some(name) = &type_item.name {
+                    if let Some(type_item) = data.index.get(&type_id)
+                        && let Some(name) = &type_item.name {
                             output.push_str(&format!("- `{}`", name));
-                            if let Some(docs) = &type_item.docs {
-                                if let Some(first_line) = docs.lines().next() {
-                                    if !first_line.trim().is_empty() {
+                            if let Some(docs) = &type_item.docs
+                                && let Some(first_line) = docs.lines().next()
+                                    && !first_line.trim().is_empty() {
                                         output.push_str(&format!(": {}", first_line));
                                     }
-                                }
-                            }
                             output.push('\n');
                         }
-                    }
                 }
                 output.push('\n');
             }
@@ -2075,19 +2026,16 @@ fn process_trait_details(output: &mut String, trait_: &Trait, data: &Crate, leve
                     "#".repeat(heading_level + 1)
                 ));
                 for &const_id in &assoc_consts {
-                    if let Some(const_item) = data.index.get(&const_id) {
-                        if let Some(name) = &const_item.name {
+                    if let Some(const_item) = data.index.get(&const_id)
+                        && let Some(name) = &const_item.name {
                             output.push_str(&format!("- `{}`", name));
-                            if let Some(docs) = &const_item.docs {
-                                if let Some(first_line) = docs.lines().next() {
-                                    if !first_line.trim().is_empty() {
+                            if let Some(docs) = &const_item.docs
+                                && let Some(first_line) = docs.lines().next()
+                                    && !first_line.trim().is_empty() {
                                         output.push_str(&format!(": {}", first_line));
                                     }
-                                }
-                            }
                             output.push('\n');
                         }
-                    }
                 }
                 output.push('\n');
             }
@@ -2098,19 +2046,16 @@ fn process_trait_details(output: &mut String, trait_: &Trait, data: &Crate, leve
                     "#".repeat(heading_level + 1)
                 ));
                 for &method_id in &required_methods {
-                    if let Some(method_item) = data.index.get(&method_id) {
-                        if let Some(name) = &method_item.name {
+                    if let Some(method_item) = data.index.get(&method_id)
+                        && let Some(name) = &method_item.name {
                             output.push_str(&format!("- `{}`", name));
-                            if let Some(docs) = &method_item.docs {
-                                if let Some(first_line) = docs.lines().next() {
-                                    if !first_line.trim().is_empty() {
+                            if let Some(docs) = &method_item.docs
+                                && let Some(first_line) = docs.lines().next()
+                                    && !first_line.trim().is_empty() {
                                         output.push_str(&format!(": {}", first_line));
                                     }
-                                }
-                            }
                             output.push('\n');
                         }
-                    }
                 }
                 output.push('\n');
             }
@@ -2123,28 +2068,25 @@ fn process_trait_details(output: &mut String, trait_: &Trait, data: &Crate, leve
                 "#".repeat(heading_level)
             ));
             for &method_id in &provided_methods {
-                if let Some(method_item) = data.index.get(&method_id) {
-                    if let ItemEnum::Function(_) = &method_item.inner {
+                if let Some(method_item) = data.index.get(&method_id)
+                    && let ItemEnum::Function(_) = &method_item.inner {
                         // Format method signature
                         let mut method_signature = String::new();
                         format_item_signature(&mut method_signature, method_item, data);
 
                         // Output with proper code block formatting
                         output.push_str("- ```rust\n  ");
-                        output.push_str(&method_signature.trim());
+                        output.push_str(method_signature.trim());
                         output.push_str("\n  ```");
 
                         // Add documentation if available
-                        if let Some(docs) = &method_item.docs {
-                            if let Some(first_line) = docs.lines().next() {
-                                if !first_line.trim().is_empty() {
+                        if let Some(docs) = &method_item.docs
+                            && let Some(first_line) = docs.lines().next()
+                                && !first_line.trim().is_empty() {
                                     output.push_str(&format!("\n  {}", first_line));
                                 }
-                            }
-                        }
                         output.push_str("\n\n");
                     }
-                }
             }
         }
     }
@@ -2158,8 +2100,8 @@ fn process_trait_details(output: &mut String, trait_: &Trait, data: &Crate, leve
         output.push_str("This trait is implemented for the following types:\n\n");
 
         for &impl_id in &trait_.implementations {
-            if let Some(impl_item) = data.index.get(&impl_id) {
-                if let ItemEnum::Impl(impl_) = &impl_item.inner {
+            if let Some(impl_item) = data.index.get(&impl_id)
+                && let ItemEnum::Impl(impl_) = &impl_item.inner {
                     output.push_str(&format!("- `{}`", format_type(&impl_.for_, data)));
                     // Add generics if present
                     if !impl_.generics.params.is_empty() {
@@ -2172,7 +2114,6 @@ fn process_trait_details(output: &mut String, trait_: &Trait, data: &Crate, leve
                     }
                     output.push('\n');
                 }
-            }
         }
         output.push('\n');
     }
@@ -2270,8 +2211,8 @@ pub fn rustdoc_json_to_markdown_files(data: Crate, output_dir: &Path) -> std::io
 
     // Process root module
     let root_id = data.root;
-    if let Some(root_item) = data.index.get(&root_id) {
-        if let ItemEnum::Module(module) = &root_item.inner {
+    if let Some(root_item) = data.index.get(&root_id)
+        && let ItemEnum::Module(module) = &root_item.inner {
             // Create root index.md
             let mut root_content = String::new();
 
@@ -2326,7 +2267,6 @@ pub fn rustdoc_json_to_markdown_files(data: Crate, output_dir: &Path) -> std::io
             // Generate individual item files
             generate_item_files(&mut file_structure, &organized, &data, output_dir)?;
         }
-    }
 
     // Write all files
     file_structure.write_all()
@@ -2392,11 +2332,10 @@ fn add_items_summary(output: &mut String, organized: &OrganizedItems, data: &Cra
             if let Some(item) = data.index.get(id) {
                 let link = format!("{}.md", sanitize_filename(name));
                 output.push_str(&format!("- [`{}`]({})\n", name, link));
-                if let Some(docs) = &item.docs {
-                    if let Some(first_line) = docs.lines().next() {
+                if let Some(docs) = &item.docs
+                    && let Some(first_line) = docs.lines().next() {
                         output.push_str(&format!("  - {}\n", first_line));
                     }
-                }
             }
         }
         output.push('\n');
@@ -2408,11 +2347,10 @@ fn add_items_summary(output: &mut String, organized: &OrganizedItems, data: &Cra
             if let Some(item) = data.index.get(id) {
                 let link = format!("{}.md", sanitize_filename(name));
                 output.push_str(&format!("- [`{}`]({})\n", name, link));
-                if let Some(docs) = &item.docs {
-                    if let Some(first_line) = docs.lines().next() {
+                if let Some(docs) = &item.docs
+                    && let Some(first_line) = docs.lines().next() {
                         output.push_str(&format!("  - {}\n", first_line));
                     }
-                }
             }
         }
         output.push('\n');
@@ -2424,11 +2362,10 @@ fn add_items_summary(output: &mut String, organized: &OrganizedItems, data: &Cra
             if let Some(item) = data.index.get(id) {
                 let link = format!("{}.md", sanitize_filename(name));
                 output.push_str(&format!("- [`{}`]({})\n", name, link));
-                if let Some(docs) = &item.docs {
-                    if let Some(first_line) = docs.lines().next() {
+                if let Some(docs) = &item.docs
+                    && let Some(first_line) = docs.lines().next() {
                         output.push_str(&format!("  - {}\n", first_line));
                     }
-                }
             }
         }
         output.push('\n');
@@ -2440,11 +2377,10 @@ fn add_items_summary(output: &mut String, organized: &OrganizedItems, data: &Cra
             if let Some(item) = data.index.get(id) {
                 let link = format!("{}.md", sanitize_filename(name));
                 output.push_str(&format!("- [`{}`]({})\n", name, link));
-                if let Some(docs) = &item.docs {
-                    if let Some(first_line) = docs.lines().next() {
+                if let Some(docs) = &item.docs
+                    && let Some(first_line) = docs.lines().next() {
                         output.push_str(&format!("  - {}\n", first_line));
                     }
-                }
             }
         }
         output.push('\n');
@@ -2456,11 +2392,10 @@ fn add_items_summary(output: &mut String, organized: &OrganizedItems, data: &Cra
             if let Some(item) = data.index.get(id) {
                 let link = format!("{}.md", sanitize_filename(name));
                 output.push_str(&format!("- [`{}`]({})\n", name, link));
-                if let Some(docs) = &item.docs {
-                    if let Some(first_line) = docs.lines().next() {
+                if let Some(docs) = &item.docs
+                    && let Some(first_line) = docs.lines().next() {
                         output.push_str(&format!("  - {}\n", first_line));
                     }
-                }
             }
         }
         output.push('\n');
@@ -2469,11 +2404,10 @@ fn add_items_summary(output: &mut String, organized: &OrganizedItems, data: &Cra
     if !organized.reexports.is_empty() {
         output.push_str("## Re-exports\n\n");
         for (_, id) in &organized.reexports {
-            if let Some(item) = data.index.get(id) {
-                if let ItemEnum::Use(use_item) = &item.inner {
+            if let Some(item) = data.index.get(id)
+                && let ItemEnum::Use(use_item) = &item.inner {
                     output.push_str(&format!("- `{}`\n", use_item.source));
                 }
-            }
         }
         output.push('\n');
     }
@@ -2545,8 +2479,8 @@ fn process_module_to_file(
     data: &Crate,
     parent_path: &Path,
 ) -> std::io::Result<()> {
-    if let Some(item) = data.index.get(module_id) {
-        if let ItemEnum::Module(module) = &item.inner {
+    if let Some(item) = data.index.get(module_id)
+        && let ItemEnum::Module(module) = &item.inner {
             let mut content = String::new();
 
             // Add module header
@@ -2608,7 +2542,6 @@ fn process_module_to_file(
             let index_path = format!("{}/index.md", module_dir);
             file_structure.add_file(PathBuf::from(&index_path), content);
         }
-    }
     Ok(())
 }
 
