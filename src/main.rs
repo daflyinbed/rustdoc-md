@@ -15,6 +15,10 @@ use zstd::decode_all;
         .required(true)
         .args(&["path", "crate_name"]),
 ))]
+#[command(group(
+    ArgGroup::new("output_target")
+        .args(&["output", "output_dir"]),
+))]
 struct Cli {
     /// The path to a local rust docs json file.
     #[arg(short, long)]
@@ -37,8 +41,12 @@ struct Cli {
     target: String,
 
     /// The path to the output markdown file.
-    #[arg(short, long)]
-    output: PathBuf,
+    #[arg(short, long, group = "output_target")]
+    output: Option<PathBuf>,
+
+    /// Output as a directory structure instead of a single file.
+    #[arg(long, group = "output_target")]
+    output_dir: Option<PathBuf>,
 }
 
 fn main() -> eyre::Result<()> {
@@ -79,10 +87,21 @@ fn main() -> eyre::Result<()> {
         unreachable!("neither --path nor --crate-name set");
     };
 
-    let md = rustdoc_json_to_markdown(data);
-    fs::write(&cli.output, md)?;
-
-    println!("successfully wrote to file {}", cli.output.display());
+    if let Some(output_dir) = cli.output_dir {
+        // Output as directory structure
+        rustdoc_md::rustdoc_json_to_markdown_files(data, &output_dir)?;
+        println!(
+            "successfully wrote documentation to directory {}",
+            output_dir.display()
+        );
+    } else if let Some(output) = cli.output {
+        // Output as single file
+        let md = rustdoc_json_to_markdown(data);
+        fs::write(&output, md)?;
+        println!("successfully wrote to file {}", output.display());
+    } else {
+        bail!("either --output or --output-dir must be specified");
+    }
 
     Ok(())
 }

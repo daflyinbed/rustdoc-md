@@ -2255,3 +2255,398 @@ fn process_impl_details(output: &mut String, impl_: &Impl, data: &Crate, level: 
         ));
     }
 }
+
+use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+
+/// Generates markdown files in a directory structure similar to docs.rs
+pub fn rustdoc_json_to_markdown_files(data: Crate, output_dir: &Path) -> std::io::Result<()> {
+    // Create output directory
+    fs::create_dir_all(output_dir)?;
+
+    // Generate file structure
+    let mut file_structure = FileStructure::new(output_dir.to_path_buf());
+
+    // Process root module
+    let root_id = data.root;
+    if let Some(root_item) = data.index.get(&root_id) {
+        if let ItemEnum::Module(module) = &root_item.inner {
+            // Create root index.md
+            let mut root_content = String::new();
+
+            // Add crate header
+            root_content.push_str("# Crate Documentation\n\n");
+
+            if let Some(version) = &data.crate_version {
+                root_content.push_str(&format!("**Version:** {}\n\n", version));
+            }
+
+            root_content.push_str(&format!("**Format Version:** {}\n\n", data.format_version));
+
+            // Add root documentation
+            if let Some(name) = &root_item.name {
+                root_content.push_str(&format!("# Module `{}`\n\n", name));
+            } else if module.is_crate {
+                root_content.push_str("# Crate Root\n\n");
+            }
+
+            if let Some(docs) = &root_item.docs {
+                root_content.push_str(&format!("{}\n\n", docs));
+            }
+
+            // Collect and organize items
+            let organized = organize_items(&module.items, &data);
+
+            // Add navigation links to submodules and items
+            if !organized.modules.is_empty() {
+                root_content.push_str("## Modules\n\n");
+                for (module_name, module_id) in &organized.modules {
+                    let module_path = format!("{}/index.md", sanitize_filename(module_name));
+                    root_content.push_str(&format!("- [`{}`]({})\n", module_name, module_path));
+
+                    // Process submodule
+                    process_module_to_file(
+                        &mut file_structure,
+                        module_id,
+                        module_name,
+                        &data,
+                        output_dir,
+                    )?;
+                }
+                root_content.push('\n');
+            }
+
+            // Add other items summary
+            add_items_summary(&mut root_content, &organized, &data);
+
+            // Write root index
+            file_structure.add_file(PathBuf::from("index.md"), root_content);
+
+            // Generate individual item files
+            generate_item_files(&mut file_structure, &organized, &data, output_dir)?;
+        }
+    }
+
+    // Write all files
+    file_structure.write_all()
+}
+
+/// Organizes items by category
+struct OrganizedItems {
+    modules: Vec<(String, Id)>,
+    types: Vec<(String, Id)>,
+    traits: Vec<(String, Id)>,
+    functions: Vec<(String, Id)>,
+    constants: Vec<(String, Id)>,
+    macros: Vec<(String, Id)>,
+    reexports: Vec<(String, Id)>,
+    _other: Vec<(String, Id)>,
+}
+
+fn organize_items(item_ids: &[Id], data: &Crate) -> OrganizedItems {
+    let mut modules = Vec::new();
+    let mut types = Vec::new();
+    let mut traits = Vec::new();
+    let mut functions = Vec::new();
+    let mut constants = Vec::new();
+    let mut macros = Vec::new();
+    let mut reexports = Vec::new();
+    let mut _other = Vec::new();
+
+    for id in item_ids {
+        if let Some(item) = data.index.get(id) {
+            let name = item.name.clone().unwrap_or_default();
+            match &item.inner {
+                ItemEnum::Module(_) => modules.push((name, *id)),
+                ItemEnum::Struct(_)
+                | ItemEnum::Enum(_)
+                | ItemEnum::Union(_)
+                | ItemEnum::TypeAlias(_) => types.push((name, *id)),
+                ItemEnum::Trait(_) | ItemEnum::TraitAlias(_) => traits.push((name, *id)),
+                ItemEnum::Function(_) => functions.push((name, *id)),
+                ItemEnum::Constant { .. } | ItemEnum::Static(_) => constants.push((name, *id)),
+                ItemEnum::Macro(_) | ItemEnum::ProcMacro(_) => macros.push((name, *id)),
+                ItemEnum::Use(_) => reexports.push((name, *id)),
+                _ => _other.push((name, *id)),
+            }
+        }
+    }
+
+    OrganizedItems {
+        modules,
+        types,
+        traits,
+        functions,
+        constants,
+        macros,
+        reexports,
+        _other,
+    }
+}
+
+fn add_items_summary(output: &mut String, organized: &OrganizedItems, data: &Crate) {
+    if !organized.types.is_empty() {
+        output.push_str("## Types\n\n");
+        for (name, id) in &organized.types {
+            if let Some(item) = data.index.get(id) {
+                let link = format!("{}.md", sanitize_filename(name));
+                output.push_str(&format!("- [`{}`]({})\n", name, link));
+                if let Some(docs) = &item.docs {
+                    if let Some(first_line) = docs.lines().next() {
+                        output.push_str(&format!("  - {}\n", first_line));
+                    }
+                }
+            }
+        }
+        output.push('\n');
+    }
+
+    if !organized.traits.is_empty() {
+        output.push_str("## Traits\n\n");
+        for (name, id) in &organized.traits {
+            if let Some(item) = data.index.get(id) {
+                let link = format!("{}.md", sanitize_filename(name));
+                output.push_str(&format!("- [`{}`]({})\n", name, link));
+                if let Some(docs) = &item.docs {
+                    if let Some(first_line) = docs.lines().next() {
+                        output.push_str(&format!("  - {}\n", first_line));
+                    }
+                }
+            }
+        }
+        output.push('\n');
+    }
+
+    if !organized.functions.is_empty() {
+        output.push_str("## Functions\n\n");
+        for (name, id) in &organized.functions {
+            if let Some(item) = data.index.get(id) {
+                let link = format!("{}.md", sanitize_filename(name));
+                output.push_str(&format!("- [`{}`]({})\n", name, link));
+                if let Some(docs) = &item.docs {
+                    if let Some(first_line) = docs.lines().next() {
+                        output.push_str(&format!("  - {}\n", first_line));
+                    }
+                }
+            }
+        }
+        output.push('\n');
+    }
+
+    if !organized.constants.is_empty() {
+        output.push_str("## Constants and Statics\n\n");
+        for (name, id) in &organized.constants {
+            if let Some(item) = data.index.get(id) {
+                let link = format!("{}.md", sanitize_filename(name));
+                output.push_str(&format!("- [`{}`]({})\n", name, link));
+                if let Some(docs) = &item.docs {
+                    if let Some(first_line) = docs.lines().next() {
+                        output.push_str(&format!("  - {}\n", first_line));
+                    }
+                }
+            }
+        }
+        output.push('\n');
+    }
+
+    if !organized.macros.is_empty() {
+        output.push_str("## Macros\n\n");
+        for (name, id) in &organized.macros {
+            if let Some(item) = data.index.get(id) {
+                let link = format!("{}.md", sanitize_filename(name));
+                output.push_str(&format!("- [`{}`]({})\n", name, link));
+                if let Some(docs) = &item.docs {
+                    if let Some(first_line) = docs.lines().next() {
+                        output.push_str(&format!("  - {}\n", first_line));
+                    }
+                }
+            }
+        }
+        output.push('\n');
+    }
+
+    if !organized.reexports.is_empty() {
+        output.push_str("## Re-exports\n\n");
+        for (_, id) in &organized.reexports {
+            if let Some(item) = data.index.get(id) {
+                if let ItemEnum::Use(use_item) = &item.inner {
+                    output.push_str(&format!("- `{}`\n", use_item.source));
+                }
+            }
+        }
+        output.push('\n');
+    }
+}
+
+fn generate_item_files(
+    file_structure: &mut FileStructure,
+    organized: &OrganizedItems,
+    data: &Crate,
+    _base_path: &Path,
+) -> std::io::Result<()> {
+    // Generate files for types
+    for (name, id) in &organized.types {
+        let mut content = String::new();
+        if let Some(item) = data.index.get(id) {
+            process_item(&mut content, item, data, 1);
+        }
+        let filename = format!("{}.md", sanitize_filename(name));
+        file_structure.add_file(PathBuf::from(&filename), content);
+    }
+
+    // Generate files for traits
+    for (name, id) in &organized.traits {
+        let mut content = String::new();
+        if let Some(item) = data.index.get(id) {
+            process_item(&mut content, item, data, 1);
+        }
+        let filename = format!("{}.md", sanitize_filename(name));
+        file_structure.add_file(PathBuf::from(&filename), content);
+    }
+
+    // Generate files for functions
+    for (name, id) in &organized.functions {
+        let mut content = String::new();
+        if let Some(item) = data.index.get(id) {
+            process_item(&mut content, item, data, 1);
+        }
+        let filename = format!("{}.md", sanitize_filename(name));
+        file_structure.add_file(PathBuf::from(&filename), content);
+    }
+
+    // Generate files for constants
+    for (name, id) in &organized.constants {
+        let mut content = String::new();
+        if let Some(item) = data.index.get(id) {
+            process_item(&mut content, item, data, 1);
+        }
+        let filename = format!("{}.md", sanitize_filename(name));
+        file_structure.add_file(PathBuf::from(&filename), content);
+    }
+
+    // Generate files for macros
+    for (name, id) in &organized.macros {
+        let mut content = String::new();
+        if let Some(item) = data.index.get(id) {
+            process_item(&mut content, item, data, 1);
+        }
+        let filename = format!("{}.md", sanitize_filename(name));
+        file_structure.add_file(PathBuf::from(&filename), content);
+    }
+
+    Ok(())
+}
+
+fn process_module_to_file(
+    file_structure: &mut FileStructure,
+    module_id: &Id,
+    module_name: &str,
+    data: &Crate,
+    parent_path: &Path,
+) -> std::io::Result<()> {
+    if let Some(item) = data.index.get(module_id) {
+        if let ItemEnum::Module(module) = &item.inner {
+            let mut content = String::new();
+
+            // Add module header
+            content.push_str(&format!("# Module `{}`\n\n", module_name));
+
+            if let Some(docs) = &item.docs {
+                content.push_str(&format!("{}\n\n", docs));
+            }
+
+            // Organize items
+            let organized = organize_items(&module.items, data);
+
+            // Add submodules
+            if !organized.modules.is_empty() {
+                content.push_str("## Submodules\n\n");
+                for (submodule_name, submodule_id) in &organized.modules {
+                    let submodule_path = format!(
+                        "{}/{}/index.md",
+                        sanitize_filename(module_name),
+                        sanitize_filename(submodule_name)
+                    );
+                    content.push_str(&format!("- [`{}`]({})\n", submodule_name, submodule_path));
+
+                    // Process submodule recursively
+                    let submodule_dir = parent_path.join(sanitize_filename(module_name));
+                    process_module_to_file(
+                        file_structure,
+                        submodule_id,
+                        submodule_name,
+                        data,
+                        &submodule_dir,
+                    )?;
+                }
+                content.push('\n');
+            }
+
+            // Add items summary
+            add_items_summary(&mut content, &organized, data);
+
+            // Generate individual item files in this module's directory
+            let module_dir = sanitize_filename(module_name);
+            for (name, id) in organized
+                .types
+                .iter()
+                .chain(&organized.traits)
+                .chain(&organized.functions)
+                .chain(&organized.constants)
+                .chain(&organized.macros)
+            {
+                let mut item_content = String::new();
+                if let Some(item) = data.index.get(id) {
+                    process_item(&mut item_content, item, data, 1);
+                }
+                let filename = format!("{}/{}.md", module_dir, sanitize_filename(name));
+                file_structure.add_file(PathBuf::from(&filename), item_content);
+            }
+
+            // Add index file for module
+            let index_path = format!("{}/index.md", module_dir);
+            file_structure.add_file(PathBuf::from(&index_path), content);
+        }
+    }
+    Ok(())
+}
+
+fn sanitize_filename(name: &str) -> String {
+    name.chars()
+        .map(|c| match c {
+            '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*' => '_',
+            _ => c,
+        })
+        .collect()
+}
+
+/// Manages file structure for output
+struct FileStructure {
+    base_path: PathBuf,
+    files: HashMap<PathBuf, String>,
+}
+
+impl FileStructure {
+    fn new(base_path: PathBuf) -> Self {
+        FileStructure {
+            base_path,
+            files: HashMap::new(),
+        }
+    }
+
+    fn add_file(&mut self, relative_path: PathBuf, content: String) {
+        self.files.insert(relative_path, content);
+    }
+
+    fn write_all(&self) -> std::io::Result<()> {
+        for (relative_path, content) in &self.files {
+            let full_path = self.base_path.join(relative_path);
+            if let Some(parent) = full_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::write(&full_path, content)?;
+        }
+        Ok(())
+    }
+}
